@@ -748,8 +748,7 @@
             bizGstin: "22AAAAA0000A1Z5",
             bizPhone: "+91 98765 43210",
             bizEmail: "info@nix.ai",
-            bizAddress: "Stonnary Marin Street,
-Warmovn, Uistn 25000",
+            bizAddress: "Stonnary Marin Street,\nWarmovn, Uistn 25000",
             bizTerms: "1. Goods once sold will not be taken back or exchanged.\n2. All disputes subject to local jurisdiction.",
             logoData: "",
             sigData: "",
@@ -1236,8 +1235,7 @@ Warmovn, Uistn 25000",
             document.getElementById('print-biz-phone-val').innerText = currentSettings.bizPhone;
             document.getElementById('print-biz-email-val').innerText = currentSettings.bizEmail;
             document.getElementById('print-signatory-title').innerText = 'For ' + currentSettings.bizName;
-            document.getElementById('print-terms').innerText = currentSettings.bizTerms.replace(/\n/g, '
-');
+            document.getElementById('print-terms').innerText = currentSettings.bizTerms.replace(/\\n/g, '\n');
 
             // Logo, Signature, QR
             if (currentSettings.logoData) {
