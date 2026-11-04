@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIX Invoice Management - Open Source Billing & Inventory</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2pdf.js for Client-side PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Google Font: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        nix: {
+                            black: '#09090b',
+                            card: '#121215',
+                            border: '#27272a',
+                            copper: '#d97706',
+                            gold: '#f59e0b',
+                            accent: '#3b82f6'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Printable Styles for Invoice */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printable-invoice-container, #printable-invoice-container * {
+                visibility: visible;
+            }
+            #printable-invoice-container {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 15px;
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #18181b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #52525b;
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 font-sans text-zinc-100 antialiased min-h-screen flex flex-col md:flex-row">
+
+    <!-- Mobile Header -->
+    <header class="md:hidden bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center z-20 sticky top-0">
+        <div class="flex items-center gap-3">
+            <!-- Embedded NIX Vector Logo (Mobile) -->
+            <svg class="w-8 h-8 text-amber-500" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="310" cy="120" r="15" fill="#d97706"/>
+                <path d="M265 140 L310 140 L260 210" stroke="currentColor" stroke-width="10" stroke-linecap="round"/>
+                <path d="M190 170 Q 250 215 310 170" stroke="currentColor" stroke-width="10" fill="none" stroke-linecap="round"/>
+                <line x1="250" y1="210" x2="250" y2="370" stroke="currentColor" stroke-width="10" stroke-linecap="round"/>
+                <path d="M160 220 L160 310 L220 220 L220 310" stroke="currentColor" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M280 220 L360 310 M360 220 L280 310" stroke="currentColor" stroke-width="14" stroke-linecap="round"/>
+            </svg>
+            <div>
+                <span class="font-extrabold text-lg tracking-wider text-white">NIX</span>
+                <span class="text-xs text-amber-500 block leading-none font-semibold">INVOICE</span>
+            </div>
+        </div>
+        <button id="btn-toggle-sidebar" class="text-zinc-400 hover:text-white text-xl p-1 focus:outline-none">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+    </header>
+
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col z-30 shadow-2xl md:shadow-none">
+        <!-- Logo Area -->
+        <div class="hidden md:flex items-center gap-3.5 px-6 py-6 border-b border-zinc-800/80">
+            <!-- NIX Vector Logo Header -->
+            <div class="w-11 h-11 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0 shadow-inner">
+                <svg class="w-8 h-8 text-amber-500" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="310" cy="120" r="15" fill="#d97706"/>
+                    <path d="M265 140 L310 140 L260 210" stroke="currentColor" stroke-width="10" stroke-linecap="round"/>
+                    <path d="M190 170 Q 250 215 310 170" stroke="currentColor" stroke-width="10" fill="none" stroke-linecap="round"/>
+                    <line x1="250" y1="210" x2="250" y2="370" stroke="currentColor" stroke-width="10" stroke-linecap="round"/>
+                    <path d="M160 220 L160 310 L220 220 L220 310" stroke="currentColor" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M280 220 L360 310 M360 220 L280 310" stroke="currentColor" stroke-width="14" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div>
+                <h1 class="font-extrabold text-white text-xl tracking-wider leading-none">NIX</h1>
+                <span class="text-[10px] text-amber-500 font-bold tracking-widest uppercase mt-1 block">Management</span>
+            </div>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all duration-150 hover:bg-zinc-800 text-zinc-400 hover:text-white">
+                <i class="fa-solid fa-chart-pie w-5 text-center text-amber-500 text-sm"></i>
+                <span>Dashboard & Analytics</span>
+            </button>
+            <button onclick="switchTab('billing')" id="nav-billing" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all duration-150 hover:bg-zinc-800 text-zinc-400 hover:text-white">
+                <i class="fa-solid fa-file-invoice-dollar w-5 text-center text-emerald-400 text-sm"></i>
+                <span>Create Sales Invoice</span>
+            </button>
+            <button onclick="switchTab('invoices')" id="nav-invoices" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all duration-150 hover:bg-zinc-800 text-zinc-400 hover:text-white">
+                <i class="fa-solid fa-receipt w-5 text-center text-blue-400 text-sm"></i>
+                <span>Sales Invoices</span>
+            </button>
+            <button onclick="switchTab('inventory')" id="nav-inventory" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all duration-150 hover:bg-zinc-800 text-zinc-400 hover:text-white">
+                <i class="fa-solid fa-boxes-stacked w-5 text-center text-purple-400 text-sm"></i>
+                <span>Stock & Inventory</span>
+            </button>
+            <button onclick="switchTab('purchases')" id="nav-purchases" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all duration-150 hover:bg-zinc-800 text-zinc-400 hover:text-white">
+                <i class="fa-solid fa-cart-shopping w-5 text-center text-rose-400 text-sm"></i>
+                <span>Purchases & ITC</span>
+            </button>
+            <button onclick="switchTab('parties')" id="nav-parties" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all duration-150 hover:bg-zinc-800 text-zinc-400 hover:text-white">
+                <i class="fa-solid fa-users w-5 text-center text-indigo-400 text-sm"></i>
+                <span>Customers & Suppliers</span>
+            </button>
+            <button onclick="switchTab('settings')" id="nav-settings" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all duration-150 hover:bg-zinc-800 text-zinc-400 hover:text-white">
+                <i class="fa-solid fa-sliders w-5 text-center text-zinc-400 text-sm"></i>
+                <span>Business Settings</span>
+            </button>
+        </nav>
+
+        <!-- Data Backup / Export Tools -->
+        <div class="p-4 border-t border-zinc-800/80 bg-zinc-950/40">
+            <div class="flex items-center justify-between text-[11px] text-zinc-400 mb-2">
+                <span>Storage Mode</span>
+                <span class="text-emerald-400 font-bold flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Offline LocalDB
+                </span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="exportDataJSON()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] font-semibold py-2 px-2 rounded-xl border border-zinc-700/50 transition text-center">
+                    <i class="fa-solid fa-download mr-1"></i> Backup
+                </button>
+                <label class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] font-semibold py-2 px-2 rounded-xl border border-zinc-700/50 transition text-center cursor-pointer">
+                    <i class="fa-solid fa-upload mr-1"></i> Restore
+                    <input type="file" id="import-json-file" accept=".json" class="hidden" onchange="importDataJSON(event)">
+                </label>
+            </div>
+            <button onclick="exportCSV()" class="w-full mt-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-[11px] font-semibold py-1.5 px-2 rounded-xl border border-amber-500/20 transition text-center">
+                <i class="fa-solid fa-file-csv mr-1"></i> Export Accountant CSV
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Dynamic Content Container -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto min-h-screen bg-zinc-950">
+
+        <!-- DASHBOARD VIEW -->
+        <section id="view-dashboard" class="tab-view p-4 md:p-8 space-y-6">
+            <!-- Header Bar -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
+                <div>
+                    <h2 class="text-2xl font-black text-white tracking-wide" id="dash-business-name">NIX Business</h2>
+                    <p class="text-xs text-zinc-400 mt-1">Financial performance, profit analysis & real-time inventory alerts.</p>
+                </div>
+                <button onclick="switchTab('billing')" class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-zinc-950 font-bold px-5 py-3 rounded-xl shadow-lg shadow-amber-500/10 transition text-xs tracking-wider">
+                    <i class="fa-solid fa-plus font-black"></i> CREATE NEW INVOICE
+                </button>
+            </div>
+
+            <!-- Financial Metric Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <!-- Total Sales -->
+                <div class="bg-zinc-900 p-5 rounded-2xl border border-zinc-800 space-y-2">
+                    <div class="flex justify-between items-center text-emerald-400">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Total Revenue</span>
+                        <i class="fa-solid fa-indian-rupee-sign text-sm"></i>
+                    </div>
+                    <h3 class="text-xl font-black text-white" id="dash-total-sales">₹0.00</h3>
+                    <p class="text-[10px] text-emerald-500 font-medium"><i class="fa-solid fa-arrow-trend-up"></i> Sales Invoices</p>
+                </div>
+
+                <!-- Total Purchases & Expenses -->
+                <div class="bg-zinc-900 p-5 rounded-2xl border border-zinc-800 space-y-2">
+                    <div class="flex justify-between items-center text-rose-400">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Total Expenses</span>
+                        <i class="fa-solid fa-arrow-down-short-wide text-sm"></i>
+                    </div>
+                    <h3 class="text-xl font-black text-white" id="dash-total-expenses">₹0.00</h3>
+                    <p class="text-[10px] text-rose-500 font-medium">Purchases & Bills</p>
+                </div>
+
+                <!-- Net Profit -->
+                <div class="bg-zinc-900 p-5 rounded-2xl border border-zinc-800 space-y-2">
+                    <div class="flex justify-between items-center text-amber-400">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Net Profit</span>
+                        <i class="fa-solid fa-chart-line text-sm"></i>
+                    </div>
+                    <h3 class="text-xl font-black text-white" id="dash-net-profit">₹0.00</h3>
+                    <p class="text-[10px] text-zinc-400 font-medium">Revenue - Purchases</p>
+                </div>
+
+                <!-- Pending Receivables -->
+                <div class="bg-zinc-900 p-5 rounded-2xl border border-zinc-800 space-y-2">
+                    <div class="flex justify-between items-center text-blue-400">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Unpaid Credit</span>
+                        <i class="fa-solid fa-clock-rotate-left text-sm"></i>
+                    </div>
+                    <h3 class="text-xl font-black text-white" id="dash-pending-receivables">₹0.00</h3>
+                    <p class="text-[10px] text-blue-400 font-medium">Customer Receivables</p>
+                </div>
+
+                <!-- ITC (Input Tax Credit) -->
+                <div class="bg-zinc-900 p-5 rounded-2xl border border-zinc-800 space-y-2">
+                    <div class="flex justify-between items-center text-purple-400">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Input Tax Credit</span>
+                        <i class="fa-solid fa-file-invoice text-sm"></i>
+                    </div>
+                    <h3 class="text-xl font-black text-white" id="dash-itc-credit">₹0.00</h3>
+                    <p class="text-[10px] text-purple-400 font-medium">Claimable GST Input</p>
+                </div>
+            </div>
+
+            <!-- Recent Activity Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Recent Sales Invoices -->
+                <div class="lg:col-span-2 bg-zinc-900 rounded-2xl border border-zinc-800 p-5 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-white text-sm">Recent Sales Invoices</h3>
+                        <button onclick="switchTab('invoices')" class="text-xs text-amber-500 hover:text-amber-400 font-semibold">View All</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="text-zinc-500 font-semibold border-b border-zinc-800 uppercase text-[10px]">
+                                <tr>
+                                    <th class="py-2 px-3">Inv #</th>
+                                    <th class="py-2 px-3">Customer</th>
+                                    <th class="py-2 px-3">Date</th>
+                                    <th class="py-2 px-3">Amount</th>
+                                    <th class="py-2 px-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash-recent-invoices-body" class="divide-y divide-zinc-800/60 text-zinc-300">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Low Stock Items Alert -->
+                <div class="bg-zinc-900 rounded-2xl border border-zinc-800 p-5 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-white text-sm">Low Stock Inventory Alerts</h3>
+                        <button onclick="switchTab('inventory')" class="text-xs text-amber-500 hover:text-amber-400 font-semibold">Manage Stock</button>
+                    </div>
+                    <div class="space-y-2.5" id="dash-low-stock-list">
+                        <!-- Dynamic low stock list -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- BILLING / SALES INVOICE VIEW -->
+        <section id="view-billing" class="tab-view p-4 md:p-8 hidden">
+            <div class="flex flex-col xl:flex-row gap-6">
+                <!-- Invoice Form Section -->
+                <div class="xl:w-7/12 bg-zinc-900 p-5 md:p-6 rounded-2xl border border-zinc-800 space-y-6">
+                    <div class="flex items-center justify-between border-b border-zinc-800 pb-4">
+                        <div>
+                            <h2 class="text-lg font-black text-white tracking-wide">Generate GST Invoice</h2>
+                            <p class="text-xs text-zinc-400">Automatic tax split, stock deduction & dynamic UPI QR</p>
+                        </div>
+                        <span class="text-[10px] px-2.5 py-1 bg-amber-500/10 text-amber-400 font-bold rounded-md border border-amber-500/20">NIX Engine</span>
+                    </div>
+
+                    <!-- Customer & Basic Details -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-zinc-300 mb-1">Select Customer *</label>
+                            <div class="flex gap-2">
+                                <select id="bill-customer-select" onchange="onCustomerSelectChange()" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500 text-zinc-200">
+                                    <option value="">-- Select Customer --</option>
+                                </select>
+                                <button onclick="openPartyModal('Customer')" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-2 rounded-xl border border-zinc-700 text-xs shrink-0">
+                                    <i class="fa-solid fa-user-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-zinc-300 mb-1">Invoice Number</label>
+                            <input type="text" id="bill-invoice-no" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs font-bold text-amber-400 focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-zinc-300 mb-1">Invoice Date</label>
+                            <input type="date" id="bill-date" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500 text-zinc-200">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-zinc-300 mb-1">GST Tax Type</label>
+                            <select id="bill-tax-type" onchange="renderInvoicePreview()" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500 text-zinc-200">
+                                <option value="CGST_SGST">Intrastate (CGST + SGST)</option>
+                                <option value="IGST">Interstate (IGST)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Items Entry Table -->
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-xs text-zinc-300 uppercase tracking-wider">Line Items</h3>
+                            <button onclick="addBillingItemRow()" class="text-xs bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-bold px-3 py-1.5 rounded-lg border border-amber-500/20 transition">
+                                <i class="fa-solid fa-plus mr-1"></i> Add Product Row
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto border border-zinc-800 rounded-xl">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-zinc-950 text-zinc-400 font-semibold border-b border-zinc-800">
+                                    <tr>
+                                        <th class="p-2.5 w-5/12">Product / Service</th>
+                                        <th class="p-2.5 w-2/12">Qty</th>
+                                        <th class="p-2.5 w-2/12">Price (₹)</th>
+                                        <th class="p-2.5 w-2/12">GST %</th>
+                                        <th class="p-2.5 w-2/12 text-right">Total (₹)</th>
+                                        <th class="p-2.5 w-1/12 text-center"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bill-items-tbody" class="divide-y divide-zinc-800/60">
+                                    <!-- Rows added dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Additional Charges & Payment Status -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 mb-1">Payment Status</label>
+                                <select id="bill-payment-status" onchange="renderInvoicePreview()" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs focus:outline-none text-zinc-200">
+                                    <option value="Paid">Fully Paid</option>
+                                    <option value="Unpaid">Unpaid / Credit</option>
+                                    <option value="Partial">Partial Payment</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 mb-1">Payment Method</label>
+                                <select id="bill-payment-mode" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs focus:outline-none text-zinc-200">
+                                    <option value="UPI / Online">UPI / PhonePe / Paytm</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Bank Transfer">Bank Transfer (NEFT/RTGS)</option>
+                                    <option value="Cheque">Cheque</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-300 mb-1">Terms / Remarks</label>
+                                <textarea id="bill-notes" rows="2" placeholder="Thank you for your business!" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-xs focus:outline-none text-zinc-200" oninput="renderInvoicePreview()"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800 space-y-2 text-xs">
+                            <div class="flex justify-between">
+                                <span class="text-zinc-400">Sub Total:</span>
+                                <span class="font-bold text-zinc-200" id="calc-subtotal">₹0.00</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-zinc-400">Discount (₹):</span>
+                                <input type="number" id="bill-discount" value="0" min="0" oninput="renderInvoicePreview()" class="w-24 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-right text-xs text-white">
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-zinc-400">Shipping / Delivery (₹):</span>
+                                <input type="number" id="bill-shipping" value="0" min="0" oninput="renderInvoicePreview()" class="w-24 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-right text-xs text-white">
+                            </div>
+                            <div class="flex justify-between" id="row-cgst">
+                                <span class="text-zinc-400">CGST Total:</span>
+                                <span class="font-bold text-zinc-200" id="calc-cgst">₹0.00</span>
+                            </div>
+                            <div class="flex justify-between" id="row-sgst">
+                                <span class="text-zinc-400">SGST Total:</span>
+                                <span class="font-bold text-zinc-200" id="calc-sgst">₹0.00</span>
+                            </div>
+                            <div class="flex justify-between hidden" id="row-igst">
+                                <span class="text-zinc-400">IGST Total:</span>
+                                <span class="font-bold text-zinc-200" id="calc-igst">₹0.00</span>
+                            </div>
+                            <hr class="border-zinc-800 my-1">
+                            <div class="flex justify-between text-sm font-black text-white pt-1">
+                                <span>Grand Total:</span>
+                                <span class="text-amber-400 text-base" id="calc-grandtotal">₹0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex flex-wrap gap-3 pt-2">
+                        <button onclick="saveAndPrintInvoice()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 px-4 rounded-xl font-bold transition text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/10">
+                            <i class="fa-solid fa-print"></i> SAVE & PRINT INVOICE
+                        </button>
+                        <button onclick="saveAndDownloadPDF()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-zinc-950 py-3 px-4 rounded-xl font-bold transition text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10">
+                            <i class="fa-solid fa-file-pdf"></i> SAVE & DOWNLOAD PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Live Preview Section -->
+                <div class="xl:w-5/12 flex flex-col">
+                    <div class="bg-zinc-800 text-zinc-300 px-4 py-3 rounded-t-2xl flex justify-between items-center text-xs font-bold border border-zinc-700 border-b-0">
+                        <span><i class="fa-solid fa-eye mr-1.5 text-amber-400"></i> LIVE A4 INVOICE PREVIEW</span>
+                        <span class="bg-zinc-900 px-2 py-0.5 rounded text-[10px] text-zinc-400">NIX Print Layout</span>
+                    </div>
+                    
+                    <div class="bg-zinc-900 p-4 rounded-b-2xl border border-zinc-800 flex-1 flex justify-center items-start overflow-y-auto max-h-[800px]">
+                        <!-- Printable Paper Wrapper -->
+                        <div id="printable-invoice-container" class="bg-white p-6 rounded shadow-2xl text-slate-900 text-xs w-full max-w-[595px] min-h-[700px] flex flex-col justify-between border border-slate-200">
+                            <div id="invoice-preview-content">
+                                <!-- Dynamic Render -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SALES INVOICES VIEW -->
+        <section id="view-invoices" class="tab-view p-4 md:p-8 space-y-6 hidden">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
+                <div>
+                    <h2 class="text-xl font-black text-white">Sales Invoices History</h2>
+                    <p class="text-xs text-zinc-400 mt-1">Search, view, print or export past invoices.</p>
+                </div>
+                <input type="text" id="search-invoices" oninput="renderInvoicesTable()" placeholder="Search invoice # or customer..." class="bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-amber-500 text-zinc-200 w-full md:w-64">
+            </div>
+
+            <div class="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-zinc-950 text-zinc-400 font-semibold border-b border-zinc-800 uppercase text-[10px]">
+                            <tr>
+                                <th class="p-3.5">Invoice #</th>
+                                <th class="p-3.5">Date</th>
+                                <th class="p-3.5">Customer</th>
+                                <th class="p-3.5">Payment</th>
+                                <th class="p-3.5 text-right">Grand Total</th>
+                                <th class="p-3.5 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoices-table-body" class="divide-y divide-zinc-800/60 text-zinc-300">
+                            <!-- Dynamic invoice list -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- INVENTORY VIEW -->
+        <section id="view-inventory" class="tab-view p-4 md:p-8 space-y-6 hidden">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
+                <div>
+                    <h2 class="text-xl font-black text-white">Stock & Inventory Management</h2>
+                    <p class="text-xs text-zinc-400 mt-1">Track quantities, HSN codes, purchase rates, and low-stock alerts.</p>
+                </div>
+                <button onclick="openItemModal()" class="bg-amber-500 hover:bg-amber-600 text-zinc-950 px-4 py-2.5 rounded-xl font-bold text-xs transition shadow-lg shadow-amber-500/10">
+                    <i class="fa-solid fa-plus mr-1"></i> Add Product Item
+                </button>
+            </div>
+
+            <div class="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-zinc-950 text-zinc-400 font-semibold border-b border-zinc-800 uppercase text-[10px]">
+                            <tr>
+                                <th class="p-3.5">Product Name</th>
+                                <th class="p-3.5">HSN Code</th>
+                                <th class="p-3.5">Sale Rate</th>
+                                <th class="p-3.5">Purchase Rate</th>
+                                <th class="p-3.5">GST Rate</th>
+                                <th class="p-3.5">Current Stock</th>
+                                <th class="p-3.5 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-table-body" class="divide-y divide-zinc-800/60 text-zinc-300">
+                            <!-- Dynamic inventory -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- PURCHASES & EXPENSES VIEW -->
+        <section id="view-purchases" class="tab-view p-4 md:p-8 space-y-6 hidden">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
+                <div>
+                    <h2 class="text-xl font-black text-white">Purchases, Expenses & Input Tax Credit (ITC)</h2>
+                    <p class="text-xs text-zinc-400 mt-1">Record supplier purchase bills to update inventory and claim ITC.</p>
+                </div>
+                <button onclick="openPurchaseModal()" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs transition shadow-lg shadow-rose-600/10">
+                    <i class="fa-solid fa-cart-plus mr-1"></i> Add Purchase Bill / Expense
+                </button>
+            </div>
+
+            <div class="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-zinc-950 text-zinc-400 font-semibold border-b border-zinc-800 uppercase text-[10px]">
+                            <tr>
+                                <th class="p-3.5">Bill #</th>
+                                <th class="p-3.5">Date</th>
+                                <th class="p-3.5">Supplier / Party</th>
+                                <th class="p-3.5">Category</th>
+                                <th class="p-3.5 text-right">ITC Claimable</th>
+                                <th class="p-3.5 text-right">Total Amount</th>
+                                <th class="p-3.5 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="purchases-table-body" class="divide-y divide-zinc-800/60 text-zinc-300">
+                            <!-- Dynamic purchases -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- PARTIES / CUSTOMERS & SUPPLIERS VIEW -->
+        <section id="view-parties" class="tab-view p-4 md:p-8 space-y-6 hidden">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-900 p-6 rounded-2xl border border-zinc-800">
+                <div>
+                    <h2 class="text-xl font-black text-white">Customers & Suppliers Directory</h2>
+                    <p class="text-xs text-zinc-400 mt-1">Manage contact profiles, phone numbers, addresses and GSTIN numbers.</p>
+                </div>
+                <button onclick="openPartyModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs transition shadow-lg shadow-indigo-600/10">
+                    <i class="fa-solid fa-user-plus mr-1"></i> Add Contact / Party
+                </button>
+            </div>
+
+            <div class="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-zinc-950 text-zinc-400 font-semibold border-b border-zinc-800 uppercase text-[10px]">
+                            <tr>
+                                <th class="p-3.5">Name</th>
+                                <th class="p-3.5">Type</th>
+                                <th class="p-3.5">Phone</th>
+                                <th class="p-3.5">GSTIN</th>
+                                <th class="p-3.5">Address</th>
+                                <th class="p-3.5 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="parties-table-body" class="divide-y divide-zinc-800/60 text-zinc-300">
+                            <!-- Dynamic parties -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- BUSINESS SETTINGS VIEW -->
+        <section id="view-settings" class="tab-view p-4 md:p-8 space-y-6 hidden">
+            <div class="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 max-w-3xl space-y-6">
+                <div>
+                    <h2 class="text-xl font-black text-white">Business Settings & GST Details</h2>
+                    <p class="text-xs text-zinc-400 mt-1">Configure your official business name, logo, GSTIN, and bank account details for invoice printing.</p>
+                </div>
+
+                <form id="settings-form" onsubmit="saveSettings(event)" class="space-y-4 text-xs">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block font-semibold text-zinc-300 mb-1">Business Name *</label>
+                            <input type="text" id="set-name" required class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500 text-white">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-zinc-300 mb-1">GSTIN Number</label>
+                            <input type="text" id="set-gstin" placeholder="e.g. 27AAAAA0000A1Z5" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500 text-white">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-zinc-300 mb-1">Mobile / Phone</label>
+                            <input type="text" id="set-phone" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500 text-white">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-zinc-300 mb-1">Email Address</label>
+                            <input type="email" id="set-email" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500 text-white">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-zinc-300 mb-1">Business Address</label>
+                        <textarea id="set-address" rows="2" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-xs focus:outline-none focus:border-amber-500 text-white"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block font-semibold text-zinc-300 mb-1">Bank Name & Branch</label>
+                            <input type="text" id="set-bank-name" placeholder="HDFC Bank, Branch Name" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500 text-white">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-zinc-300 mb-1">Account Number</label>
+                            <input type="text" id="set-bank-acc" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500 text-white">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-zinc-300 mb-1">IFSC Code</label>
+                            <input type="text" id="set-bank-ifsc" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500 text-white">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-zinc-300 mb-1">UPI ID (For Invoice QR Code)</label>
+                            <input type="text" id="set-upi" placeholder="yourname@upi" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500 text-white">
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-zinc-800 flex justify-end">
+                        <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-zinc-950 font-bold py-2.5 px-6 rounded-xl text-xs transition shadow-lg shadow-amber-500/10">
+                            SAVE BUSINESS SETTINGS
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL: ADD / EDIT ITEM -->
+    <div id="modal-item" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden text-zinc-200">
+            <div class="bg-zinc-950 px-5 py-4 flex justify-between items-center border-b border-zinc-800">
+                <h3 class="font-extrabold text-sm text-white" id="modal-item-title">Add Product Item</h3>
+                <button onclick="closeModal('modal-item')" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <form id="form-item" onsubmit="saveItemForm(event)" class="p-5 space-y-3 text-xs">
+                <input type="hidden" id="item-id">
+                <div>
+                    <label class="block font-semibold text-zinc-300 mb-1">Product Name *</label>
+                    <input type="text" id="item-name" required class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-zinc-300 mb-1">HSN / SAC Code</label>
+                        <input type="text" id="item-hsn" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-zinc-300 mb-1">GST Tax Rate (%)</label>
+                        <select id="item-gst" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
+                            <option value="0">0% (Exempt)</option>
+                            <option value="5">5%</option>
+                            <option value="12">12%</option>
+                            <option value="18" selected>18%</option>
+                            <option value="28">28%</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-zinc-300 mb-1">Sale Rate (₹) *</label>
+                        <input type="number" step="0.01" id="item-sale-price" required class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-zinc-300 mb-1">Purchase Rate (₹)</label>
+                        <input type="number" step="0.01" id="item-purchase-price" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-zinc-300 mb-1">Current Stock Quantity</label>
+                    <input type="number" id="item-stock" value="0" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <div class="pt-3 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('modal-item')" class="bg-zinc-800 text-zinc-300 px-4 py-2 rounded-xl font-semibold hover:bg-zinc-700">Cancel</button>
+                    <button type="submit" class="bg-amber-500 text-zinc-950 px-5 py-2 rounded-xl font-extrabold hover:bg-amber-600">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD / EDIT PARTY -->
+    <div id="modal-party" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden text-zinc-200">
+            <div class="bg-zinc-950 px-5 py-4 flex justify-between items-center border-b border-zinc-800">
+                <h3 class="font-extrabold text-sm text-white" id="modal-party-title">Add Contact / Party</h3>
+                <button onclick="closeModal('modal-party')" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <form id="form-party" onsubmit="savePartyForm(event)" class="p-5 space-y-3 text-xs">
+                <input type="hidden" id="party-id">
+                <div>
+                    <label class="block font-semibold text-zinc-300 mb-1">Party / Business Name *</label>
+                    <input type="text" id="party-name" required class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-zinc-300 mb-1">Party Type</label>
+                        <select id="party-type" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
+                            <option value="Customer">Customer</option>
+                            <option value="Supplier">Supplier</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-zinc-300 mb-1">Phone Number</label>
+                        <input type="text" id="party-phone" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-zinc-300 mb-1">GSTIN</label>
+                    <input type="text" id="party-gstin" placeholder="Optional" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block font-semibold text-zinc-300 mb-1">Address</label>
+                    <textarea id="party-address" rows="2" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500"></textarea>
+                </div>
+                <div class="pt-3 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('modal-party')" class="bg-zinc-800 text-zinc-300 px-4 py-2 rounded-xl font-semibold hover:bg-zinc-700">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 text-white px-5 py-2 rounded-xl font-extrabold hover:bg-indigo-700">Save Contact</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD PURCHASE / EXPENSE -->
+    <div id="modal-purchase" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden text-zinc-200">
+            <div class="bg-zinc-950 px-5 py-4 flex justify-between items-center border-b border-zinc-800">
+                <h3 class="font-extrabold text-sm text-white">Add Purchase Bill / Expense</h3>
+                <button onclick="closeModal('modal-purchase')" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <form id="form-purchase" onsubmit="savePurchaseForm(event)" class="p-5 space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-zinc-300 mb-1">Select Supplier / Party</label>
+                    <select id="pur-party-select" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
+                        <option value="">-- Choose Supplier --</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-zinc-300 mb-1">Bill / Expense Ref #</label>
+                        <input type="text" id="pur-bill-no" required class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-zinc-300 mb-1">Date</label>
+                        <input type="date" id="pur-date" required class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-zinc-300 mb-1">Expense Category</label>
+                    <select id="pur-category" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
+                        <option value="Raw Material / Inventory Stock">Raw Material / Stock Purchase</option>
+                        <option value="Office & Utilities">Office Utilities & Rent</option>
+                        <option value="Logistics & Shipping">Logistics & Shipping</option>
+                        <option value="Salary & Wages">Salary & Staff Wages</option>
+                        <option value="Other Expenses">Other Miscellaneous</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-zinc-300 mb-1">Total Bill Amount (₹) *</label>
+                        <input type="number" step="0.01" id="pur-amount" required class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-zinc-300 mb-1">Input Tax Credit / GST (₹)</label>
+                        <input type="number" step="0.01" id="pur-itc" value="0" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+                <div class="pt-3 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('modal-purchase')" class="bg-zinc-800 text-zinc-300 px-4 py-2 rounded-xl font-semibold hover:bg-zinc-700">Cancel</button>
+                    <button type="submit" class="bg-rose-600 text-white px-5 py-2 rounded-xl font-extrabold hover:bg-rose-700">Save Purchase Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- UI TOAST -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-zinc-900 border border-zinc-700 text-white px-4 py-3 rounded-xl shadow-2xl z-50 flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+        <span id="toast-message" class="text-xs font-semibold">Notification</span>
+    </div>
+
+    <!-- CORE JAVASCRIPT LOGIC -->
+    <script>
+        const DB_NAME = 'NIX_Invoice_DB';
+        const DB_VERSION = 1;
+        let db;
+
+        // Initialize IndexedDB
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    db = e.target.result;
+                    if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('items')) db.createObjectStore('items', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('parties')) db.createObjectStore('parties', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('invoices')) db.createObjectStore('invoices', { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains('purchases')) db.createObjectStore('purchases', { keyPath: 'id' });
+                };
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve(db);
+                };
+                request.onerror = (e) => reject(e);
+            });
+        }
+
+        function getAll(storeName) {
+            return new Promise((resolve) => {
+                const tx = db.transaction(storeName, 'readonly');
+                const store = tx.objectStore(storeName);
+                const req = store.getAll();
+                req.onsuccess = () => resolve(req.result || []);
+            });
+        }
+
+        function putItem(storeName, item) {
+            return new Promise((resolve) => {
+                const tx = db.transaction(storeName, 'readwrite');
+                const store = tx.objectStore(storeName);
+                store.put(item);
+                tx.oncomplete = () => resolve();
+            });
+        }
+
+        function deleteItem(storeName, id) {
+            return new Promise((resolve) => {
+                const tx = db.transaction(storeName, 'readwrite');
+                const store = tx.objectStore(storeName);
+                store.delete(id);
+                tx.oncomplete = () => resolve();
+            });
+        }
+
+        // Global State
+        let settings = { id: 'nix_config', name: 'NIX Enterprises', gstin: '', phone: '', email: '', address: '', bankName: '', bankAcc: '', bankIfsc: '', upi: '' };
+        let itemsList = [];
+        let partiesList = [];
+        let invoicesList = [];
+        let purchasesList = [];
+        let currentBillingRows = [];
+
+        window.onload = async function() {
+            await initDB();
+            await loadInitialData();
+            setupNavigation();
+            switchTab('dashboard');
+            initBillingDefaults();
+        };
+
+        async function loadInitialData() {
+            const savedSettings = await getAll('settings');
+            if (savedSettings.length > 0) settings = savedSettings[0];
+            else await putItem('settings', settings);
+
+            document.getElementById('set-name').value = settings.name || '';
+            document.getElementById('set-gstin').value = settings.gstin || '';
+            document.getElementById('set-phone').value = settings.phone || '';
+            document.getElementById('set-email').value = settings.email || '';
+            document.getElementById('set-address').value = settings.address || '';
+            document.getElementById('set-bank-name').value = settings.bankName || '';
+            document.getElementById('set-bank-acc').value = settings.bankAcc || '';
+            document.getElementById('set-bank-ifsc').value = settings.bankIfsc || '';
+            document.getElementById('set-upi').value = settings.upi || '';
+            document.getElementById('dash-business-name').textContent = settings.name || 'NIX Business';
+
+            itemsList = await getAll('items');
+            partiesList = await getAll('parties');
+            invoicesList = await getAll('invoices');
+            purchasesList = await getAll('purchases');
+
+            if (itemsList.length === 0 && partiesList.length === 0) {
+                await seedSampleData();
+            }
+
+            renderInventoryTable();
+            renderPartiesTable();
+            renderInvoicesTable();
+            renderPurchasesTable();
+            populateBillingCustomerOptions();
+            updateDashboardMetrics();
+        }
+
+        async function seedSampleData() {
+            const sampleParties = [
+                { id: 'p1', name: 'Aura Solutions', type: 'Customer', phone: '9876543210', gstin: '27AAAAA0000A1Z5', address: 'Mumbai, MH' },
+                { id: 'p2', name: 'Global Tech Suppliers', type: 'Supplier', phone: '9123456789', gstin: '07BBBCC1111B1Z2', address: 'Delhi' }
+            ];
+            const sampleItems = [
+                { id: 'i1', name: 'NIX Premium Shaker Set', hsn: '7323', salePrice: 1499, purchasePrice: 850, gst: 18, stock: 35 },
+                { id: 'i2', name: 'Cocktail Strainer Pro', hsn: '8205', salePrice: 499, purchasePrice: 220, gst: 18, stock: 3 }
+            ];
+            for (let p of sampleParties) await putItem('parties', p);
+            for (let i of sampleItems) await putItem('items', i);
+            itemsList = await getAll('items');
+            partiesList = await getAll('parties');
+        }
+
+        function setupNavigation() {
+            document.getElementById('btn-toggle-sidebar').onclick = () => {
+                document.getElementById('sidebar').classList.toggle('-translate-x-full');
+            };
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-view').forEach(view => view.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('bg-zinc-800', 'text-white'));
+
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) activeNav.classList.add('bg-zinc-800', 'text-white');
+
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+            if (tabId === 'dashboard') updateDashboardMetrics();
+            if (tabId === 'billing') renderInvoicePreview();
+        }
+
+        function showToast(msg, iconClass = 'fa-circle-check text-emerald-400') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = msg;
+            document.getElementById('toast-icon').className = `fa-solid ${iconClass} text-lg`;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+        }
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        async function saveSettings(e) {
+            e.preventDefault();
+            settings.name = document.getElementById('set-name').value;
+            settings.gstin = document.getElementById('set-gstin').value;
+            settings.phone = document.getElementById('set-phone').value;
+            settings.email = document.getElementById('set-email').value;
+            settings.address = document.getElementById('set-address').value;
+            settings.bankName = document.getElementById('set-bank-name').value;
+            settings.bankAcc = document.getElementById('set-bank-acc').value;
+            settings.bankIfsc = document.getElementById('set-bank-ifsc').value;
+            settings.upi = document.getElementById('set-upi').value;
+
+            await putItem('settings', settings);
+            document.getElementById('dash-business-name').textContent = settings.name;
+            showToast('Business settings saved!');
+            renderInvoicePreview();
+        }
+
+        // Inventory Management
+        function renderInventoryTable() {
+            const tbody = document.getElementById('inventory-table-body');
+            if (itemsList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-zinc-500">No products added. Click "Add Product Item".</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = itemsList.map(item => `
+                <tr class="hover:bg-zinc-800/40 transition border-b border-zinc-800/60">
+                    <td class="p-3.5 font-bold text-white">${item.name}</td>
+                    <td class="p-3.5 text-zinc-400">${item.hsn || '-'}</td>
+                    <td class="p-3.5 font-semibold text-amber-400">₹${Number(item.salePrice).toFixed(2)}</td>
+                    <td class="p-3.5 text-zinc-400">₹${Number(item.purchasePrice || 0).toFixed(2)}</td>
+                    <td class="p-3.5 text-zinc-300">${item.gst}%</td>
+                    <td class="p-3.5">
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-black ${item.stock <= 5 ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">
+                            ${item.stock} units
+                        </span>
+                    </td>
+                    <td class="p-3.5 text-center">
+                        <button onclick="editItem('${item.id}')" class="text-blue-400 hover:text-blue-300 mr-2"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteItemAction('${item.id}')" class="text-rose-400 hover:text-rose-300"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openItemModal(item = null) {
+            document.getElementById('modal-item-title').textContent = item ? 'Edit Product Item' : 'Add Product Item';
+            document.getElementById('item-id').value = item ? item.id : '';
+            document.getElementById('item-name').value = item ? item.name : '';
+            document.getElementById('item-hsn').value = item ? item.hsn : '';
+            document.getElementById('item-gst').value = item ? item.gst : 18;
+            document.getElementById('item-sale-price').value = item ? item.salePrice : '';
+            document.getElementById('item-purchase-price').value = item ? item.purchasePrice : '';
+            document.getElementById('item-stock').value = item ? item.stock : 0;
+            openModal('modal-item');
+        }
+
+        async function saveItemForm(e) {
+            e.preventDefault();
+            const id = document.getElementById('item-id').value || 'item_' + Date.now();
+            const newItem = {
+                id,
+                name: document.getElementById('item-name').value,
+                hsn: document.getElementById('item-hsn').value,
+                gst: parseFloat(document.getElementById('item-gst').value) || 0,
+                salePrice: parseFloat(document.getElementById('item-sale-price').value) || 0,
+                purchasePrice: parseFloat(document.getElementById('item-purchase-price').value) || 0,
+                stock: parseInt(document.getElementById('item-stock').value) || 0
+            };
+            await putItem('items', newItem);
+            itemsList = await getAll('items');
+            renderInventoryTable();
+            closeModal('modal-item');
+            showToast('Product saved!');
+        }
+
+        function editItem(id) {
+            const item = itemsList.find(i => i.id === id);
+            if (item) openItemModal(item);
+        }
+
+        async function deleteItemAction(id) {
+            if (confirm('Delete this item from inventory?')) {
+                await deleteItem('items', id);
+                itemsList = await getAll('items');
+                renderInventoryTable();
+                showToast('Item deleted!', 'fa-circle-xmark text-rose-400');
+            }
+        }
+
+        // Customer & Supplier Management
+        function renderPartiesTable() {
+            const tbody = document.getElementById('parties-table-body');
+            if (partiesList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-zinc-500">No contacts added. Click "Add Contact / Party".</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = partiesList.map(party => `
+                <tr class="hover:bg-zinc-800/40 transition border-b border-zinc-800/60">
+                    <td class="p-3.5 font-bold text-white">${party.name}</td>
+                    <td class="p-3.5">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${party.type === 'Supplier' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'}">
+                            ${party.type || 'Customer'}
+                        </span>
+                    </td>
+                    <td class="p-3.5 text-zinc-300">${party.phone || '-'}</td>
+                    <td class="p-3.5 text-zinc-400">${party.gstin || '-'}</td>
+                    <td class="p-3.5 text-zinc-400">${party.address || '-'}</td>
+                    <td class="p-3.5 text-center">
+                        <button onclick="editParty('${party.id}')" class="text-blue-400 hover:text-blue-300 mr-2"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deletePartyAction('${party.id}')" class="text-rose-400 hover:text-rose-300"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openPartyModal(presetType = 'Customer', party = null) {
+            document.getElementById('modal-party-title').textContent = party ? 'Edit Contact' : 'Add Contact';
+            document.getElementById('party-id').value = party ? party.id : '';
+            document.getElementById('party-name').value = party ? party.name : '';
+            document.getElementById('party-type').value = party ? (party.type || 'Customer') : presetType;
+            document.getElementById('party-phone').value = party ? party.phone : '';
+            document.getElementById('party-gstin').value = party ? party.gstin : '';
+            document.getElementById('party-address').value = party ? party.address : '';
+            openModal('modal-party');
+        }
+
+        async function savePartyForm(e) {
+            e.preventDefault();
+            const id = document.getElementById('party-id').value || 'party_' + Date.now();
+            const newParty = {
+                id,
+                name: document.getElementById('party-name').value,
+                type: document.getElementById('party-type').value,
+                phone: document.getElementById('party-phone').value,
+                gstin: document.getElementById('party-gstin').value,
+                address: document.getElementById('party-address').value
+            };
+            await putItem('parties', newParty);
+            partiesList = await getAll('parties');
+            renderPartiesTable();
+            populateBillingCustomerOptions();
+            closeModal('modal-party');
+            showToast('Contact saved!');
+        }
+
+        function editParty(id) {
+            const party = partiesList.find(p => p.id === id);
+            if (party) openPartyModal(party.type, party);
+        }
+
+        async function deletePartyAction(id) {
+            if (confirm('Delete this contact?')) {
+                await deleteItem('parties', id);
+                partiesList = await getAll('parties');
+                renderPartiesTable();
+                populateBillingCustomerOptions();
+                showToast('Contact deleted!', 'fa-circle-xmark text-rose-400');
+            }
+        }
+
+        // Purchases & Expense Log
+        function openPurchaseModal() {
+            document.getElementById('pur-bill-no').value = 'PUR-' + Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('pur-date').value = new Date().toISOString().split('T')[0];
+            const select = document.getElementById('pur-party-select');
+            select.innerHTML = `<option value="">-- Choose Supplier --</option>` +
+                partiesList.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            openModal('modal-purchase');
+        }
+
+        async function savePurchaseForm(e) {
+            e.preventDefault();
+            const partyId = document.getElementById('pur-party-select').value;
+            const party = partiesList.find(p => p.id === partyId) || { name: 'General Expense' };
+
+            const purchase = {
+                id: document.getElementById('pur-bill-no').value,
+                date: document.getElementById('pur-date').value,
+                supplierName: party.name,
+                category: document.getElementById('pur-category').value,
+                amount: parseFloat(document.getElementById('pur-amount').value) || 0,
+                itc: parseFloat(document.getElementById('pur-itc').value) || 0,
+                createdAt: new Date().toISOString()
+            };
+
+            await putItem('purchases', purchase);
+            purchasesList = await getAll('purchases');
+            renderPurchasesTable();
+            updateDashboardMetrics();
+            closeModal('modal-purchase');
+            showToast('Purchase bill recorded!');
+        }
+
+        function renderPurchasesTable() {
+            const tbody = document.getElementById('purchases-table-body');
+            if (purchasesList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-zinc-500">No purchases recorded. Click "Add Purchase Bill / Expense".</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = purchasesList.map(pur => `
+                <tr class="hover:bg-zinc-800/40 transition border-b border-zinc-800/60">
+                    <td class="p-3.5 font-bold text-white">${pur.id}</td>
+                    <td class="p-3.5 text-zinc-400">${pur.date}</td>
+                    <td class="p-3.5 text-zinc-300 font-semibold">${pur.supplierName}</td>
+                    <td class="p-3.5 text-zinc-400">${pur.category}</td>
+                    <td class="p-3.5 text-right font-bold text-purple-400">₹${Number(pur.itc || 0).toFixed(2)}</td>
+                    <td class="p-3.5 text-right font-bold text-rose-400">₹${Number(pur.amount).toFixed(2)}</td>
+                    <td class="p-3.5 text-center">
+                        <button onclick="deletePurchaseAction('${pur.id}')" class="text-rose-400 hover:text-rose-300"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function deletePurchaseAction(id) {
+            if (confirm('Delete purchase bill?')) {
+                await deleteItem('purchases', id);
+                purchasesList = await getAll('purchases');
+                renderPurchasesTable();
+                updateDashboardMetrics();
+                showToast('Purchase record deleted!', 'fa-circle-xmark text-rose-400');
+            }
+        }
+
+        // Billing Screen Logic
+        function initBillingDefaults() {
+            document.getElementById('bill-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('bill-invoice-no').value = 'NIX-' + Math.floor(1000 + Math.random() * 9000);
+            currentBillingRows = [];
+            addBillingItemRow();
+        }
+
+        function populateBillingCustomerOptions() {
+            const select = document.getElementById('bill-customer-select');
+            select.innerHTML = `<option value="">-- Choose Customer --</option>` +
+                partiesList.map(p => `<option value="${p.id}">${p.name} ${p.phone ? '(' + p.phone + ')' : ''}</option>`).join('');
+        }
+
+        function onCustomerSelectChange() {
+            renderInvoicePreview();
+        }
+
+        function addBillingItemRow() {
+            currentBillingRows.push({ itemId: '', name: '', qty: 1, rate: 0, gst: 18 });
+            renderBillingRows();
+        }
+
+        function removeBillingItemRow(index) {
+            if (currentBillingRows.length > 1) {
+                currentBillingRows.splice(index, 1);
+                renderBillingRows();
+            }
+        }
+
+        function renderBillingRows() {
+            const tbody = document.getElementById('bill-items-tbody');
+            tbody.innerHTML = currentBillingRows.map((row, index) => {
+                const rowTotal = (row.qty * row.rate) * (1 + row.gst / 100);
+                return `
+                    <tr class="border-b border-zinc-800/60">
+                        <td class="p-2">
+                            <select onchange="updateRowItem(${index}, this.value)" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-1.5 text-xs text-white focus:outline-none">
+                                <option value="">-- Choose Item --</option>
+                                ${itemsList.map(i => `<option value="${i.id}" ${row.itemId === i.id ? 'selected' : ''}>${i.name}</option>`).join('')}
+                            </select>
+                        </td>
+                        <td class="p-2">
+                            <input type="number" min="1" value="${row.qty}" oninput="updateRowQty(${index}, this.value)" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-1.5 text-xs text-center text-white">
+                        </td>
+                        <td class="p-2">
+                            <input type="number" step="0.01" value="${row.rate}" oninput="updateRowRate(${index}, this.value)" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-1.5 text-xs text-right text-white">
+                        </td>
+                        <td class="p-2">
+                            <select onchange="updateRowGST(${index}, this.value)" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-1.5 text-xs text-white">
+                                <option value="0" ${row.gst === 0 ? 'selected' : ''}>0%</option>
+                                <option value="5" ${row.gst === 5 ? 'selected' : ''}>5%</option>
+                                <option value="12" ${row.gst === 12 ? 'selected' : ''}>12%</option>
+                                <option value="18" ${row.gst === 18 ? 'selected' : ''}>18%</option>
+                                <option value="28" ${row.gst === 28 ? 'selected' : ''}>28%</option>
+                            </select>
+                        </td>
+                        <td class="p-2 text-right font-bold text-amber-400">
+                            ₹${rowTotal.toFixed(2)}
+                        </td>
+                        <td class="p-2 text-center">
+                            <button onclick="removeBillingItemRow(${index})" class="text-rose-500 hover:text-rose-400"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            renderInvoicePreview();
+        }
+
+        function updateRowItem(index, itemId) {
+            const item = itemsList.find(i => i.id === itemId);
+            if (item) {
+                currentBillingRows[index].itemId = item.id;
+                currentBillingRows[index].name = item.name;
+                currentBillingRows[index].rate = item.salePrice;
+                currentBillingRows[index].gst = item.gst;
+            } else {
+                currentBillingRows[index].itemId = '';
+                currentBillingRows[index].name = '';
+                currentBillingRows[index].rate = 0;
+            }
+            renderBillingRows();
+        }
+
+        function updateRowQty(index, val) {
+            currentBillingRows[index].qty = parseFloat(val) || 0;
+            renderBillingRows();
+        }
+
+        function updateRowRate(index, val) {
+            currentBillingRows[index].rate = parseFloat(val) || 0;
+            renderBillingRows();
+        }
+
+        function updateRowGST(index, val) {
+            currentBillingRows[index].gst = parseFloat(val) || 0;
+            renderBillingRows();
+        }
+
+        function calculateTotals() {
+            let subtotal = 0;
+            let totalGstAmount = 0;
+
+            currentBillingRows.forEach(row => {
+                const baseAmount = row.qty * row.rate;
+                const gstAmount = baseAmount * (row.gst / 100);
+                subtotal += baseAmount;
+                totalGstAmount += gstAmount;
+            });
+
+            const discount = parseFloat(document.getElementById('bill-discount').value) || 0;
+            const shipping = parseFloat(document.getElementById('bill-shipping').value) || 0;
+            const taxType = document.getElementById('bill-tax-type').value;
+
+            let cgst = 0, sgst = 0, igst = 0;
+            if (taxType === 'CGST_SGST') {
+                cgst = totalGstAmount / 2;
+                sgst = totalGstAmount / 2;
+                document.getElementById('row-cgst').classList.remove('hidden');
+                document.getElementById('row-sgst').classList.remove('hidden');
+                document.getElementById('row-igst').classList.add('hidden');
+            } else {
+                igst = totalGstAmount;
+                document.getElementById('row-cgst').classList.add('hidden');
+                document.getElementById('row-sgst').classList.add('hidden');
+                document.getElementById('row-igst').classList.remove('hidden');
+            }
+
+            const grandTotal = Math.max(0, subtotal - discount + totalGstAmount + shipping);
+
+            document.getElementById('calc-subtotal').textContent = `₹${subtotal.toFixed(2)}`;
+            document.getElementById('calc-cgst').textContent = `₹${cgst.toFixed(2)}`;
+            document.getElementById('calc-sgst').textContent = `₹${sgst.toFixed(2)}`;
+            document.getElementById('calc-igst').textContent = `₹${igst.toFixed(2)}`;
+            document.getElementById('calc-grandtotal').textContent = `₹${grandTotal.toFixed(2)}`;
+
+            return { subtotal, discount, shipping, cgst, sgst, igst, totalGstAmount, grandTotal, taxType };
+        }
+
+        // Render Invoice Preview with Embedded NIX Logo
+        function renderInvoicePreview() {
+            const totals = calculateTotals();
+            const customerId = document.getElementById('bill-customer-select').value;
+            const customer = partiesList.find(p => p.id === customerId) || { name: 'Cash Sale', phone: '', address: '', gstin: '' };
+
+            const invNo = document.getElementById('bill-invoice-no').value || 'NIX-001';
+            const invDate = document.getElementById('bill-date').value;
+            const notes = document.getElementById('bill-notes').value;
+            const status = document.getElementById('bill-payment-status').value;
+
+            const qrUrl = settings.upi ? `https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=upi://pay?pa=${settings.upi}%26pn=${encodeURIComponent(settings.name)}%26am=${totals.grandTotal.toFixed(2)}` : '';
+
+            const previewHtml = `
+                <!-- Invoice Header with NIX Vector Logo -->
+                <div class="flex justify-between items-start border-b border-slate-300 pb-3 mb-3">
+                    <div class="flex items-start gap-3">
+                        <!-- Embedded NIX Vector Logo on Invoice -->
+                        <div class="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center p-1.5 shrink-0">
+                            <svg class="w-full h-full text-amber-500" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="310" cy="120" r="15" fill="#d97706"/>
+                                <path d="M265 140 L310 140 L260 210" stroke="currentColor" stroke-width="12" stroke-linecap="round"/>
+                                <path d="M190 170 Q 250 215 310 170" stroke="currentColor" stroke-width="12" fill="none" stroke-linecap="round"/>
+                                <line x1="250" y1="210" x2="250" y2="370" stroke="currentColor" stroke-width="12" stroke-linecap="round"/>
+                                <path d="M160 220 L160 310 L220 220 L220 310" stroke="currentColor" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M280 220 L360 310 M360 220 L280 310" stroke="currentColor" stroke-width="16" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-base font-black text-slate-900 leading-tight">${settings.name || 'NIX Enterprises'}</h2>
+                            <p class="text-[10px] text-slate-600 whitespace-pre-line">${settings.address || 'Address Not Provided'}</p>
+                            <p class="text-[10px] text-slate-600">Ph: ${settings.phone || '-'} | Email: ${settings.email || '-'}</p>
+                            ${settings.gstin ? `<p class="text-[10px] font-bold text-slate-900 mt-0.5">GSTIN: ${settings.gstin}</p>` : ''}
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-block bg-slate-900 text-white font-extrabold px-2.5 py-0.5 rounded text-[10px] tracking-wider mb-1">TAX INVOICE</span>
+                        <p class="font-bold text-xs text-slate-900"># ${invNo}</p>
+                        <p class="text-[10px] text-slate-600">Date: ${invDate}</p>
+                        <span class="inline-block mt-1 px-2 py-0.5 text-[9px] font-bold rounded ${status === 'Paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${status.toUpperCase()}</span>
+                    </div>
+                </div>
+
+                <!-- Customer Details -->
+                <div class="bg-slate-50 p-2.5 rounded border border-slate-200 mb-3 flex justify-between">
+                    <div>
+                        <span class="text-[9px] uppercase font-bold text-slate-400 block">Billed To:</span>
+                        <h4 class="font-bold text-xs text-slate-900">${customer.name}</h4>
+                        <p class="text-[10px] text-slate-600">${customer.address || ''}</p>
+                        <p class="text-[10px] text-slate-600">Phone: ${customer.phone || '-'}</p>
+                    </div>
+                    ${customer.gstin ? `<div class="text-right"><span class="text-[9px] uppercase font-bold text-slate-400 block">Customer GSTIN:</span><p class="font-bold text-xs text-slate-900">${customer.gstin}</p></div>` : ''}
+                </div>
+
+                <!-- Products Table -->
+                <table class="w-full text-left border-collapse mb-3">
+                    <thead>
+                        <tr class="bg-slate-900 text-white text-[10px]">
+                            <th class="p-1.5 border border-slate-800">#</th>
+                            <th class="p-1.5 border border-slate-800">Item Description</th>
+                            <th class="p-1.5 border border-slate-800 text-center">Qty</th>
+                            <th class="p-1.5 border border-slate-800 text-right">Rate</th>
+                            <th class="p-1.5 border border-slate-800 text-right">GST %</th>
+                            <th class="p-1.5 border border-slate-800 text-right">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-[10px] divide-y divide-slate-200">
+                        ${currentBillingRows.map((row, idx) => {
+                            const rowAmount = row.qty * row.rate;
+                            return `
+                                <tr>
+                                    <td class="p-1.5 border border-slate-200 text-slate-500">${idx + 1}</td>
+                                    <td class="p-1.5 border border-slate-200 font-medium text-slate-800">${row.name || 'Unselected Item'}</td>
+                                    <td class="p-1.5 border border-slate-200 text-center">${row.qty}</td>
+                                    <td class="p-1.5 border border-slate-200 text-right">₹${row.rate.toFixed(2)}</td>
+                                    <td class="p-1.5 border border-slate-200 text-right">${row.gst}%</td>
+                                    <td class="p-1.5 border border-slate-200 text-right font-bold text-slate-900">₹${rowAmount.toFixed(2)}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+
+                <!-- Total Calculations -->
+                <div class="flex justify-between items-start gap-3 border-t border-slate-300 pt-2 text-[10px]">
+                    <div class="w-1/2 space-y-2">
+                        ${notes ? `<div><span class="font-bold text-slate-700">Notes:</span><p class="text-slate-500">${notes}</p></div>` : ''}
+                        
+                        ${settings.bankName ? `
+                            <div class="bg-slate-50 p-2 rounded border border-slate-200 text-[9px]">
+                                <p class="font-bold text-slate-800 mb-0.5">Bank Payment Transfer:</p>
+                                <p class="text-slate-600">Bank: ${settings.bankName}</p>
+                                <p class="text-slate-600">A/C: ${settings.bankAcc}</p>
+                                <p class="text-slate-600">IFSC: ${settings.bankIfsc}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="w-1/2 space-y-1 text-right">
+                        <div class="flex justify-between"><span class="text-slate-500">Sub Total:</span><span class="font-medium">₹${totals.subtotal.toFixed(2)}</span></div>
+                        ${totals.discount > 0 ? `<div class="flex justify-between"><span class="text-slate-500">Discount:</span><span>-₹${totals.discount.toFixed(2)}</span></div>` : ''}
+                        ${totals.taxType === 'CGST_SGST' ? `
+                            <div class="flex justify-between"><span class="text-slate-500">CGST:</span><span>₹${totals.cgst.toFixed(2)}</span></div>
+                            <div class="flex justify-between"><span class="text-slate-500">SGST:</span><span>₹${totals.sgst.toFixed(2)}</span></div>
+                        ` : `
+                            <div class="flex justify-between"><span class="text-slate-500">IGST:</span><span>₹${totals.igst.toFixed(2)}</span></div>
+                        `}
+                        ${totals.shipping > 0 ? `<div class="flex justify-between"><span class="text-slate-500">Shipping:</span><span>₹${totals.shipping.toFixed(2)}</span></div>` : ''}
+                        <div class="flex justify-between font-black text-xs border-t border-slate-300 pt-1 text-slate-900">
+                            <span>Grand Total:</span>
+                            <span class="text-amber-700">₹${totals.grandTotal.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer & Dynamic UPI QR -->
+                <div class="mt-6 pt-3 border-t border-slate-200 flex justify-between items-end text-[9px]">
+                    <div>
+                        ${qrUrl ? `<img src="${qrUrl}" alt="Scan UPI QR" class="w-16 h-16 rounded border p-1 border-slate-200 mb-1">` : ''}
+                        <p class="text-slate-400">Scan QR Code to pay via UPI</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="h-8"></div>
+                        <p class="font-bold text-slate-800">For ${settings.name || 'NIX Enterprises'}</p>
+                        <p class="text-slate-400">Authorized Signatory</p>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('invoice-preview-content').innerHTML = previewHtml;
+        }
+
+        async function commitInvoiceSave() {
+            const totals = calculateTotals();
+            const customerId = document.getElementById('bill-customer-select').value;
+            const customer = partiesList.find(p => p.id === customerId) || { name: 'Cash Sale' };
+            const invNo = document.getElementById('bill-invoice-no').value || 'NIX-001';
+            const invDate = document.getElementById('bill-date').value;
+            const status = document.getElementById('bill-payment-status').value;
+            const paymentMode = document.getElementById('bill-payment-mode').value;
+
+            const invoiceRecord = {
+                id: invNo,
+                date: invDate,
+                customerName: customer.name,
+                customerId: customerId || '',
+                items: currentBillingRows,
+                subtotal: totals.subtotal,
+                discount: totals.discount,
+                shipping: totals.shipping,
+                taxTotal: totals.totalGstAmount,
+                grandTotal: totals.grandTotal,
+                status: status,
+                paymentMode: paymentMode,
+                createdAt: new Date().toISOString()
+            };
+
+            // Automatic Inventory Outward Stock Reduction
+            for (let row of currentBillingRows) {
+                if (row.itemId) {
+                    const dbItem = itemsList.find(i => i.id === row.itemId);
+                    if (dbItem) {
+                        dbItem.stock = Math.max(0, dbItem.stock - row.qty);
+                        await putItem('items', dbItem);
+                    }
+                }
+            }
+
+            await putItem('invoices', invoiceRecord);
+            invoicesList = await getAll('invoices');
+            itemsList = await getAll('items');
+            renderInventoryTable();
+            renderInvoicesTable();
+            updateDashboardMetrics();
+            return invoiceRecord;
+        }
+
+        async function saveAndPrintInvoice() {
+            await commitInvoiceSave();
+            showToast('Invoice Saved Successfully!');
+            window.print();
+        }
+
+        async function saveAndDownloadPDF() {
+            const invoice = await commitInvoiceSave();
+            showToast('Generating PDF...');
+            const element = document.getElementById('printable-invoice-container');
+            const opt = {
+                margin: 0.2,
+                filename: `${invoice.id}_${invoice.customerName}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // Sales Invoices History
+        function renderInvoicesTable() {
+            const tbody = document.getElementById('invoices-table-body');
+            const searchQuery = document.getElementById('search-invoices').value.toLowerCase();
+            const filtered = invoicesList.filter(inv => inv.id.toLowerCase().includes(searchQuery) || inv.customerName.toLowerCase().includes(searchQuery));
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-zinc-500">No invoices found.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(inv => `
+                <tr class="hover:bg-zinc-800/40 transition border-b border-zinc-800/60">
+                    <td class="p-3.5 font-bold text-amber-400">${inv.id}</td>
+                    <td class="p-3.5 text-zinc-400">${inv.date}</td>
+                    <td class="p-3.5 text-zinc-200 font-semibold">${inv.customerName}</td>
+                    <td class="p-3.5">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${inv.status === 'Paid' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">
+                            ${inv.status}
+                        </span>
+                    </td>
+                    <td class="p-3.5 text-right font-black text-white">₹${Number(inv.grandTotal).toFixed(2)}</td>
+                    <td class="p-3.5 text-center">
+                        <button onclick="reprintInvoice('${inv.id}')" class="text-emerald-400 hover:text-emerald-300 mr-3"><i class="fa-solid fa-print"></i></button>
+                        <button onclick="deleteInvoiceAction('${inv.id}')" class="text-rose-400 hover:text-rose-300"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function reprintInvoice(id) {
+            const inv = invoicesList.find(i => i.id === id);
+            if (!inv) return;
+            currentBillingRows = inv.items || [];
+            document.getElementById('bill-invoice-no').value = inv.id;
+            document.getElementById('bill-date').value = inv.date;
+            document.getElementById('bill-payment-status').value = inv.status;
+            switchTab('billing');
+            renderInvoicePreview();
+            showToast(`Loaded invoice ${inv.id}`);
+        }
+
+        async function deleteInvoiceAction(id) {
+            if (confirm(`Delete invoice ${id}?`)) {
+                await deleteItem('invoices', id);
+                invoicesList = await getAll('invoices');
+                renderInvoicesTable();
+                updateDashboardMetrics();
+                showToast('Invoice deleted!', 'fa-circle-xmark text-rose-400');
+            }
+        }
+
+        // Financial Dashboard Analytics
+        function updateDashboardMetrics() {
+            let totalSales = 0;
+            let pendingReceivables = 0;
+            let totalExpenses = 0;
+            let totalITC = 0;
+
+            invoicesList.forEach(inv => {
+                totalSales += (inv.grandTotal || 0);
+                if (inv.status === 'Unpaid') pendingReceivables += (inv.grandTotal || 0);
+            });
+
+            purchasesList.forEach(pur => {
+                totalExpenses += (pur.amount || 0);
+                totalITC += (pur.itc || 0);
+            });
+
+            const netProfit = totalSales - totalExpenses;
+            const lowStockItems = itemsList.filter(i => i.stock <= 5);
+
+            document.getElementById('dash-total-sales').textContent = `₹${totalSales.toFixed(2)}`;
+            document.getElementById('dash-total-expenses').textContent = `₹${totalExpenses.toFixed(2)}`;
+            document.getElementById('dash-net-profit').textContent = `₹${netProfit.toFixed(2)}`;
+            document.getElementById('dash-pending-receivables').textContent = `₹${pendingReceivables.toFixed(2)}`;
+            document.getElementById('dash-itc-credit').textContent = `₹${totalITC.toFixed(2)}`;
+
+            // Recent Invoices Table
+            const recentBody = document.getElementById('dash-recent-invoices-body');
+            const recentInvoices = invoicesList.slice(-5).reverse();
+            if (recentInvoices.length === 0) {
+                recentBody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-zinc-500">No invoices yet.</td></tr>`;
+            } else {
+                recentBody.innerHTML = recentInvoices.map(inv => `
+                    <tr>
+                        <td class="py-2.5 px-3 font-bold text-amber-400">${inv.id}</td>
+                        <td class="py-2.5 px-3 text-zinc-300 font-semibold">${inv.customerName}</td>
+                        <td class="py-2.5 px-3 text-zinc-500">${inv.date}</td>
+                        <td class="py-2.5 px-3 font-black text-white">₹${inv.grandTotal.toFixed(2)}</td>
+                        <td class="py-2.5 px-3">
+                            <span class="px-2 py-0.5 rounded text-[9px] font-extrabold ${inv.status === 'Paid' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}">
+                                ${inv.status}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            // Low Stock List
+            const lowStockContainer = document.getElementById('dash-low-stock-list');
+            if (lowStockItems.length === 0) {
+                lowStockContainer.innerHTML = `<p class="text-xs text-zinc-500 py-2">All stock items are sufficient.</p>`;
+            } else {
+                lowStockContainer.innerHTML = lowStockItems.map(item => `
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-zinc-950 border border-zinc-800">
+                        <div>
+                            <p class="font-bold text-white text-xs">${item.name}</p>
+                            <p class="text-[10px] text-zinc-400">Sale Rate: ₹${item.salePrice}</p>
+                        </div>
+                        <span class="px-2 py-1 bg-rose-500/10 text-rose-400 font-black text-xs rounded-lg border border-rose-500/20">
+                            ${item.stock} units left
+                        </span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Complete Backup & Restore (JSON)
+        async function exportDataJSON() {
+            const data = {
+                settings: await getAll('settings'),
+                items: await getAll('items'),
+                parties: await getAll('parties'),
+                invoices: await getAll('invoices'),
+                purchases: await getAll('purchases'),
+                exportedAt: new Date().toISOString()
+            };
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `nix_backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            showToast('Complete JSON backup downloaded!');
+        }
+
+        function importDataJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.settings) for (let s of data.settings) await putItem('settings', s);
+                    if (data.items) for (let i of data.items) await putItem('items', i);
+                    if (data.parties) for (let p of data.parties) await putItem('parties', p);
+                    if (data.invoices) for (let inv of data.invoices) await putItem('invoices', inv);
+                    if (data.purchases) for (let pur of data.purchases) await putItem('purchases', pur);
+
+                    await loadInitialData();
+                    showToast('Data restored successfully!');
+                } catch (err) {
+                    alert('Invalid JSON backup file.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // CSV Export for Accountants
+        async function exportCSV() {
+            let csv = "Invoice Number,Date,Customer Name,Subtotal,Tax Total,Grand Total,Payment Status\n";
+            invoicesList.forEach(inv => {
+                csv += `"${inv.id}","${inv.date}","${inv.customerName}",${inv.subtotal},${inv.taxTotal},${inv.grandTotal},"${inv.status}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `nix_sales_report_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            showToast('Accountant CSV Exported!');
+        }
+    </script>
+</body>
+</html>
