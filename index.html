@@ -17,14 +17,21 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         
-        /* A4 Styling for Invoice Preview */
+        /* Responsive A4 Styling for Invoice Preview */
         .a4-page {
-            width: 210mm;
+            width: 100%;
+            max-width: 210mm;
             min-height: 297mm;
-            padding: 15mm;
+            padding: 10mm;
             margin: auto;
             background: white;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        }
+
+        @media (min-width: 640px) {
+            .a4-page {
+                padding: 15mm;
+            }
         }
 
         @media print {
@@ -83,7 +90,7 @@
 
                 <!-- Quick Action Buttons -->
                 <div class="flex items-center space-x-3">
-                    <button onclick="openInvoiceModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow flex items-center gap-2 transition">
+                    <button onclick="openInvoiceModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold shadow flex items-center gap-1.5 sm:gap-2 transition">
                         <i class="fa-solid fa-plus"></i> New Bill
                     </button>
                 </div>
@@ -101,9 +108,9 @@
     </header>
 
     <!-- Main Body Container -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex-1 w-full">
 
-        <!-- ================= TAB 1: DASHBOARD ================= -->
+        <!-- DASHBOARD -->
         <section id="tab-dashboard" class="tab-content active space-y-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -174,7 +181,6 @@
 
             <!-- Recent Activity Tables -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Recent Invoices -->
                 <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-base font-bold text-gray-900">Recent Sales Invoices</h2>
@@ -198,7 +204,6 @@
                     </div>
                 </div>
 
-                <!-- Low Stock Alert -->
                 <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
@@ -213,7 +218,7 @@
             </div>
         </section>
 
-        <!-- ================= TAB 2: INVOICES LIST ================= -->
+        <!-- INVOICES LIST -->
         <section id="tab-invoices" class="tab-content space-y-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -236,7 +241,7 @@
                     </button>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm text-gray-600">
+                    <table class="w-full text-left text-sm text-gray-600 min-w-[600px]">
                         <thead class="bg-gray-50 text-xs font-semibold text-gray-500 uppercase">
                             <tr>
                                 <th class="py-3 px-4">Invoice #</th>
@@ -257,7 +262,7 @@
             </div>
         </section>
 
-        <!-- ================= TAB 3: INVENTORY ================= -->
+        <!-- INVENTORY -->
         <section id="tab-inventory" class="tab-content space-y-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -277,7 +282,7 @@
                     </div>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm text-gray-600">
+                    <table class="w-full text-left text-sm text-gray-600 min-w-[600px]">
                         <thead class="bg-gray-50 text-xs font-semibold text-gray-500 uppercase">
                             <tr>
                                 <th class="py-3 px-4">Item Name</th>
@@ -297,7 +302,7 @@
             </div>
         </section>
 
-        <!-- ================= TAB 4: EXPENSES & INPUT MANAGEMENT ================= -->
+        <!-- EXPENSES -->
         <section id="tab-expenses" class="tab-content space-y-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -311,7 +316,7 @@
 
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm text-gray-600">
+                    <table class="w-full text-left text-sm text-gray-600 min-w-[600px]">
                         <thead class="bg-gray-50 text-xs font-semibold text-gray-500 uppercase">
                             <tr>
                                 <th class="py-3 px-4">Date</th>
@@ -331,7 +336,7 @@
             </div>
         </section>
 
-        <!-- ================= TAB 5: CUSTOMERS (PARTIES) ================= -->
+        <!-- CUSTOMERS -->
         <section id="tab-parties" class="tab-content space-y-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -345,7 +350,7 @@
 
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm text-gray-600">
+                    <table class="w-full text-left text-sm text-gray-600 min-w-[600px]">
                         <thead class="bg-gray-50 text-xs font-semibold text-gray-500 uppercase">
                             <tr>
                                 <th class="py-3 px-4">Customer Name</th>
@@ -363,15 +368,15 @@
             </div>
         </section>
 
-        <!-- ================= TAB 6: SETTINGS ================= -->
+        <!-- SETTINGS -->
         <section id="tab-settings" class="tab-content space-y-6">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">Business Settings</h1>
                 <p class="text-sm text-gray-500">Configure your business profile, upload logo, signature, payment QR, and terms.</p>
             </div>
 
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 max-w-4xl space-y-6">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 max-w-4xl space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
                         <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Business Name</label>
                         <input type="text" id="set-biz-name" class="w-full p-2.5 border border-gray-300 rounded-lg text-sm" placeholder="NIX Enterprises">
@@ -396,7 +401,6 @@
 
                 <hr class="border-gray-200">
 
-                <!-- Image Uploads Section -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
                     <div>
                         <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Company Logo</label>
@@ -423,14 +427,13 @@
 
                 <hr class="border-gray-200">
 
-                <!-- Terms & Conditions -->
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Invoice Terms & Conditions</label>
                     <textarea id="set-biz-terms" rows="3" class="w-full p-2.5 border border-gray-300 rounded-lg text-sm" placeholder="1. Goods once sold will not be taken back.&#10;2. Subject to local jurisdiction."></textarea>
                 </div>
 
                 <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                    <button onclick="saveSettings()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow transition">
+                    <button onclick="saveSettings()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow transition">
                         Save Settings
                     </button>
                 </div>
@@ -439,19 +442,19 @@
 
     </main>
 
-    <!-- ================= MODAL: INVOICE GENERATOR / PREVIEW ================= -->
-    <div id="invoice-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center overflow-y-auto p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+    <!-- INVOICE CREATOR MODAL -->
+    <div id="invoice-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+        <div class="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden my-auto">
             <!-- Modal Header -->
-            <div class="p-4 bg-slate-900 text-white flex justify-between items-center no-print">
-                <h3 class="text-lg font-bold">Tax Invoice Creator</h3>
-                <button onclick="closeInvoiceModal()" class="text-slate-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+            <div class="p-3 sm:p-4 bg-slate-900 text-white flex justify-between items-center no-print">
+                <h3 class="text-base sm:text-lg font-bold">Tax Invoice Creator</h3>
+                <button onclick="closeInvoiceModal()" class="text-slate-400 hover:text-white text-lg sm:text-xl p-1"><i class="fa-solid fa-xmark"></i></button>
             </div>
 
-            <!-- Modal Body (Scrollable Form & Preview) -->
-            <div class="p-6 overflow-y-auto flex-1 space-y-6">
-                <!-- Form Inputs for Invoice Creation -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 no-print bg-gray-50 p-4 rounded-xl border">
+            <!-- Modal Body -->
+            <div class="p-3 sm:p-6 overflow-y-auto flex-1 space-y-4 sm:space-y-6">
+                <!-- Form Inputs -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 no-print bg-gray-50 p-3 sm:p-4 rounded-xl border">
                     <div>
                         <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Invoice Number</label>
                         <input type="text" id="inv-number" class="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white" readonly>
@@ -482,21 +485,21 @@
                 <!-- Line Items Editor -->
                 <div class="no-print space-y-3">
                     <div class="flex justify-between items-center">
-                        <h4 class="text-sm font-bold text-gray-700 uppercase">Invoice Line Items</h4>
-                        <button onclick="addInvoiceItemRow()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-3 py-1.5 rounded-lg font-semibold transition">
+                        <h4 class="text-xs sm:text-sm font-bold text-gray-700 uppercase">Invoice Line Items</h4>
+                        <button onclick="addInvoiceItemRow()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-2.5 sm:px-3 py-1.5 rounded-lg font-semibold transition">
                             <i class="fa-solid fa-plus mr-1"></i> Add Item
                         </button>
                     </div>
                     <div class="overflow-x-auto border rounded-xl">
-                        <table class="w-full text-left text-sm">
+                        <table class="w-full text-left text-xs sm:text-sm min-w-[500px]">
                             <thead class="bg-gray-100 text-xs font-semibold text-gray-600 uppercase">
                                 <tr>
-                                    <th class="p-2.5">Product / Item</th>
-                                    <th class="p-2.5 w-24">Qty</th>
-                                    <th class="p-2.5 w-32">Price (₹)</th>
-                                    <th class="p-2.5 w-28">GST %</th>
-                                    <th class="p-2.5 text-right w-32">Total</th>
-                                    <th class="p-2.5 w-12 text-center">Action</th>
+                                    <th class="p-2 sm:p-2.5 min-w-[140px]">Product / Item</th>
+                                    <th class="p-2 sm:p-2.5 w-20">Qty</th>
+                                    <th class="p-2 sm:p-2.5 w-24">Price (₹)</th>
+                                    <th class="p-2 sm:p-2.5 w-20">GST %</th>
+                                    <th class="p-2 sm:p-2.5 text-right w-24">Total</th>
+                                    <th class="p-2 sm:p-2.5 w-10 text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="invoice-items-body" class="divide-y divide-gray-100"></tbody>
@@ -504,31 +507,29 @@
                     </div>
                 </div>
 
-                <!-- ================= A4 INVOICE PREVIEW AREA ================= -->
-                <div class="flex justify-center bg-gray-200 py-6 rounded-xl">
-                    <div id="invoice-print-area" class="a4-page flex flex-col justify-between text-gray-900 text-xs">
-                        <!-- Invoice Header -->
+                <!-- A4 INVOICE PREVIEW AREA (Responsive Scroll Wrapper) -->
+                <div class="bg-gray-200 p-2 sm:p-6 rounded-xl overflow-x-auto">
+                    <div id="invoice-print-area" class="a4-page flex flex-col justify-between text-gray-900 text-xs min-w-[320px]">
                         <div>
-                            <div class="flex justify-between items-start border-b pb-6">
+                            <div class="flex flex-col sm:flex-row justify-between items-start border-b pb-4 sm:pb-6 gap-4">
                                 <div class="flex items-center gap-3">
-                                    <div id="print-logo-box" class="w-14 h-14 flex items-center justify-center">
-                                        <i class="fa-solid fa-receipt text-2xl text-gray-700"></i>
+                                    <div id="print-logo-box" class="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center shrink-0">
+                                        <i class="fa-solid fa-receipt text-xl sm:text-2xl text-gray-700"></i>
                                     </div>
                                     <div>
-                                        <h2 id="print-biz-name" class="text-xl font-bold tracking-tight uppercase">NIX Enterprises</h2>
+                                        <h2 id="print-biz-name" class="text-lg sm:text-xl font-bold tracking-tight uppercase">NIX Enterprises</h2>
                                         <p id="print-biz-address" class="text-gray-500 mt-0.5 whitespace-pre-line text-[10px]">Address line...</p>
                                         <p class="text-gray-500 mt-1">GSTIN: <span id="print-biz-gstin" class="font-semibold text-gray-800">22AAAAA0000A1Z5</span></p>
                                     </div>
                                 </div>
-                                <div class="text-right">
-                                    <h1 class="text-2xl font-extrabold tracking-widest text-slate-900">INVOICE</h1>
+                                <div class="sm:text-right w-full sm:w-auto border-t sm:border-0 pt-2 sm:pt-0">
+                                    <h1 class="text-xl sm:text-2xl font-extrabold tracking-widest text-slate-900">INVOICE</h1>
                                     <p class="mt-1">Invoice #: <span id="print-inv-no" class="font-bold">INV-0001</span></p>
                                     <p>Date: <span id="print-inv-date">2026-06-01</span></p>
                                 </div>
                             </div>
 
-                            <!-- Customer & Payment Meta -->
-                            <div class="grid grid-cols-2 gap-6 my-6 text-[11px]">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 my-4 sm:my-6 text-[11px]">
                                 <div class="p-3 bg-gray-50 rounded-lg border">
                                     <p class="font-bold text-gray-700 uppercase mb-1">Billed To:</p>
                                     <p id="print-client-name" class="font-bold text-gray-900 text-sm">Customer Name</p>
@@ -543,42 +544,40 @@
                                 </div>
                             </div>
 
-                            <!-- Invoice Items Table -->
-                            <table class="w-full text-left mb-6">
-                                <thead class="bg-slate-900 text-white text-[10px] uppercase">
-                                    <tr>
-                                        <th class="p-2">#</th>
-                                        <th class="p-2">Item Description</th>
-                                        <th class="p-2 text-center">HSN/SAC</th>
-                                        <th class="p-2 text-center">Qty</th>
-                                        <th class="p-2 text-right">Price (₹)</th>
-                                        <th class="p-2 text-center">GST %</th>
-                                        <th class="p-2 text-right">Amount (₹)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="print-items-body" class="divide-y divide-gray-200"></tbody>
-                            </table>
+                            <div class="overflow-x-auto mb-6">
+                                <table class="w-full text-left min-w-[400px]">
+                                    <thead class="bg-slate-900 text-white text-[10px] uppercase">
+                                        <tr>
+                                            <th class="p-2">#</th>
+                                            <th class="p-2">Item Description</th>
+                                            <th class="p-2 text-center">HSN</th>
+                                            <th class="p-2 text-center">Qty</th>
+                                            <th class="p-2 text-right">Price (₹)</th>
+                                            <th class="p-2 text-center">GST %</th>
+                                            <th class="p-2 text-right">Amount (₹)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="print-items-body" class="divide-y divide-gray-200"></tbody>
+                                </table>
+                            </div>
 
-                            <!-- Totals & Summary -->
-                            <div class="flex justify-between items-start border-t pt-4">
-                                <!-- QR Code & Signatory -->
-                                <div class="flex items-end gap-6">
-                                    <div id="print-qr-container" class="w-24 h-24 border rounded flex items-center justify-center bg-gray-50">
+                            <div class="flex flex-col sm:flex-row justify-between items-start border-t pt-4 gap-4">
+                                <div class="flex items-end gap-4 sm:gap-6 w-full sm:w-auto justify-between sm:justify-start">
+                                    <div id="print-qr-container" class="w-20 h-20 sm:w-24 sm:h-24 border rounded flex items-center justify-center bg-gray-50 shrink-0">
                                         <span class="text-[9px] text-gray-400">No QR</span>
                                     </div>
                                     <div class="text-center">
-                                        <div id="print-sig-container" class="h-12 w-32 flex items-end justify-center mb-1">
+                                        <div id="print-sig-container" class="h-10 sm:h-12 w-28 sm:w-32 flex items-end justify-center mb-1">
                                             <span class="text-[10px] text-gray-400 italic">No Signature</span>
                                         </div>
-                                        <div class="border-t border-gray-400 pt-1 w-36">
+                                        <div class="border-t border-gray-400 pt-1 w-32 sm:w-36">
                                             <p id="print-signatory-title" class="font-bold text-[10px]">For NIX Enterprises</p>
                                             <p class="text-[9px] text-gray-500">Authorized Signatory</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Financial Totals Box -->
-                                <div class="w-64 space-y-1.5 text-[11px]">
+                                <div class="w-full sm:w-64 space-y-1.5 text-[11px]">
                                     <div class="flex justify-between py-1 border-b">
                                         <span class="text-gray-600">Subtotal:</span>
                                         <span id="print-subtotal" class="font-semibold">₹0.00</span>
@@ -599,7 +598,6 @@
                             </div>
                         </div>
 
-                        <!-- Invoice Footer / Terms -->
                         <div class="border-t pt-4 mt-6 text-[10px] text-gray-500">
                             <p class="font-bold text-gray-700 uppercase mb-1">Terms & Conditions:</p>
                             <p id="print-terms" class="whitespace-pre-line">1. Goods once sold will not be taken back or exchanged.&#10;2. All disputes subject to local jurisdiction.</p>
@@ -610,19 +608,19 @@
             </div>
 
             <!-- Modal Footer -->
-            <div class="p-4 bg-gray-100 border-t flex justify-end gap-3 no-print">
-                <button onclick="closeInvoiceModal()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg text-sm font-semibold transition">Cancel</button>
-                <button onclick="downloadPDFInvoice()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-semibold shadow flex items-center gap-2 transition">
+            <div class="p-3 sm:p-4 bg-gray-100 border-t flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 no-print">
+                <button onclick="closeInvoiceModal()" class="w-full sm:w-auto px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg text-xs sm:text-sm font-semibold transition text-center">Cancel</button>
+                <button onclick="downloadPDFInvoice()" class="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs sm:text-sm font-semibold shadow flex items-center justify-center gap-2 transition">
                     <i class="fa-solid fa-file-pdf"></i> Download PDF
                 </button>
-                <button onclick="saveAndPrintInvoice()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-semibold shadow flex items-center gap-2 transition">
+                <button onclick="saveAndPrintInvoice()" class="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs sm:text-sm font-semibold shadow flex items-center justify-center gap-2 transition">
                     <i class="fa-solid fa-floppy-disk"></i> Save & Print
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- ================= MODAL: ADD PRODUCT ================= -->
+    <!-- MODAL: ADD PRODUCT -->
     <div id="product-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
             <h3 id="product-modal-title" class="text-lg font-bold">Add Product</h3>
@@ -668,7 +666,7 @@
         </div>
     </div>
 
-    <!-- ================= MODAL: ADD EXPENSE ================= -->
+    <!-- MODAL: ADD EXPENSE -->
     <div id="expense-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
             <h3 class="text-lg font-bold">Record Business Expense / Purchase</h3>
@@ -707,7 +705,7 @@
         </div>
     </div>
 
-    <!-- ================= MODAL: ADD CUSTOMER (PARTY) ================= -->
+    <!-- MODAL: ADD CUSTOMER -->
     <div id="party-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
             <h3 class="text-lg font-bold">Add Customer</h3>
@@ -738,7 +736,6 @@
 
     <!-- JavaScript Application Core -->
     <script>
-        // IndexedDB Database Wrapper
         let db;
         const dbName = "NixInvoiceDB";
         const dbVersion = 1;
@@ -804,7 +801,6 @@
             });
         }
 
-        // App State
         let currentSettings = { ...defaultSettings };
         let productsList = [];
         let partiesList = [];
@@ -840,12 +836,12 @@
                 currentSettings[item.key] = item.value;
             });
 
-            document.getElementById('set-biz-name').value = currentSettings.bizName;
-            document.getElementById('set-biz-gstin').value = currentSettings.bizGstin;
-            document.getElementById('set-biz-phone').value = currentSettings.bizPhone;
-            document.getElementById('set-biz-email').value = currentSettings.bizEmail;
-            document.getElementById('set-biz-address').value = currentSettings.bizAddress;
-            document.getElementById('set-biz-terms').value = currentSettings.bizTerms;
+            document.getElementById('set-biz-name').value = currentSettings.bizName || '';
+            document.getElementById('set-biz-gstin').value = currentSettings.bizGstin || '';
+            document.getElementById('set-biz-phone').value = currentSettings.bizPhone || '';
+            document.getElementById('set-biz-email').value = currentSettings.bizEmail || '';
+            document.getElementById('set-biz-address').value = (currentSettings.bizAddress || '').replace(/\\n/g, '\n');
+            document.getElementById('set-biz-terms').value = (currentSettings.bizTerms || '').replace(/\\n/g, '\n');
 
             if (currentSettings.logoData) {
                 document.getElementById('preview-logo').innerHTML = `<img src="${currentSettings.logoData}" class="h-full w-full object-cover">`;
@@ -908,7 +904,6 @@
             renderPartiesTable();
         }
 
-        // Dashboard Metrics
         function renderDashboard() {
             let totalSales = invoicesList.reduce((acc, inv) => acc + (inv.grandTotal || 0), 0);
             let totalExpenses = expensesList.reduce((acc, exp) => acc + (exp.total || 0), 0);
@@ -922,7 +917,6 @@
             document.getElementById('dash-net-profit').innerText = '₹' + netProfit.toLocaleString('en-IN', {minimumFractionDigits: 2});
             document.getElementById('dash-itc-credit').innerText = '₹' + totalItc.toLocaleString('en-IN', {minimumFractionDigits: 2});
 
-            // Recent invoices
             const recentBody = document.getElementById('dash-recent-invoices');
             if (invoicesList.length === 0) {
                 recentBody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-gray-400">No invoices recorded yet.</td></tr>`;
@@ -938,7 +932,6 @@
                 `).join('');
             }
 
-            // Low stock
             const lowStockList = document.getElementById('dash-low-stock-list');
             const lowItems = productsList.filter(p => p.stock <= 5);
             if (lowItems.length === 0) {
@@ -953,7 +946,6 @@
             }
         }
 
-        // Inventory Management
         function renderInventoryTable() {
             const query = document.getElementById('inventory-search').value.toLowerCase();
             const filtered = productsList.filter(p => p.name.toLowerCase().includes(query) || (p.hsn && p.hsn.toLowerCase().includes(query)));
@@ -1020,7 +1012,6 @@
             }
         }
 
-        // Expenses Management
         function renderExpensesTable() {
             const tbody = document.getElementById('expenses-table-body');
             if (expensesList.length === 0) {
@@ -1066,7 +1057,6 @@
             }
         }
 
-        // Customers (Parties) Management
         function renderPartiesTable() {
             const tbody = document.getElementById('parties-table-body');
             if (partiesList.length === 0) {
@@ -1115,13 +1105,11 @@
             select.innerHTML = partiesList.map(p => `<option value="${p.id}">${p.name} (${p.gstin || 'No GSTIN'})</option>`).join('');
         }
 
-        // Invoice Creator & Modal
         function openInvoiceModal() {
             const nextInvNo = 'INV-' + String(invoicesList.length + 1).padStart(4, '0');
             document.getElementById('inv-number').value = nextInvNo;
             updateCustomerDropdown();
             
-            // Populate items table with one default row
             document.getElementById('invoice-items-body').innerHTML = '';
             addInvoiceItemRow();
             
@@ -1133,20 +1121,19 @@
 
         function addInvoiceItemRow(prefill = null) {
             const tbody = document.getElementById('invoice-items-body');
-            const rowId = Date.now() + Math.random();
             const tr = document.createElement('tr');
             tr.className = "invoice-item-row";
             tr.innerHTML = `
-                <td class="p-2">
-                    <select class="item-select w-full p-1.5 border rounded text-sm bg-white" onchange="onProductSelect(this)">
+                <td class="p-1.5 sm:p-2">
+                    <select class="item-select w-full p-1.5 border rounded text-xs sm:text-sm bg-white" onchange="onProductSelect(this)">
                         <option value="">Select Product...</option>
                         ${productsList.map(p => `<option value="${p.id}" ${prefill && prefill.productId === p.id ? 'selected' : ''}>${p.name} (Stock: ${p.stock})</option>`).join('')}
                     </select>
                 </td>
-                <td class="p-2"><input type="number" class="item-qty w-full p-1.5 border rounded text-sm" value="${prefill ? prefill.qty : 1}" min="1" oninput="calculateInvoiceTotals()"></td>
-                <td class="p-2"><input type="number" class="item-price w-full p-1.5 border rounded text-sm" value="${prefill ? prefill.price : 0}" step="0.01" oninput="calculateInvoiceTotals()"></td>
-                <td class="p-2">
-                    <select class="item-gst w-full p-1.5 border rounded text-sm bg-white" onchange="calculateInvoiceTotals()">
+                <td class="p-1.5 sm:p-2"><input type="number" class="item-qty w-full p-1.5 border rounded text-xs sm:text-sm" value="${prefill ? prefill.qty : 1}" min="1" oninput="calculateInvoiceTotals()"></td>
+                <td class="p-1.5 sm:p-2"><input type="number" class="item-price w-full p-1.5 border rounded text-xs sm:text-sm" value="${prefill ? prefill.price : 0}" step="0.01" oninput="calculateInvoiceTotals()"></td>
+                <td class="p-1.5 sm:p-2">
+                    <select class="item-gst w-full p-1.5 border rounded text-xs sm:text-sm bg-white" onchange="calculateInvoiceTotals()">
                         <option value="0" ${prefill && prefill.gst === 0 ? 'selected' : ''}>0%</option>
                         <option value="5" ${prefill && prefill.gst === 5 ? 'selected' : ''}>5%</option>
                         <option value="12" ${prefill && prefill.gst === 12 ? 'selected' : ''}>12%</option>
@@ -1154,8 +1141,8 @@
                         <option value="28" ${prefill && prefill.gst === 28 ? 'selected' : ''}>28%</option>
                     </select>
                 </td>
-                <td class="p-2 text-right font-semibold item-row-total">₹0.00</td>
-                <td class="p-2 text-center"><button onclick="this.closest('tr').remove(); calculateInvoiceTotals();" class="text-rose-600 hover:text-rose-800"><i class="fa-solid fa-trash"></i></button></td>
+                <td class="p-1.5 sm:p-2 text-right font-semibold item-row-total">₹0.00</td>
+                <td class="p-1.5 sm:p-2 text-center"><button onclick="this.closest('tr').remove(); calculateInvoiceTotals();" class="text-rose-600 hover:text-rose-800 p-1"><i class="fa-solid fa-trash"></i></button></td>
             `;
             tbody.appendChild(tr);
             if (prefill) calculateInvoiceTotals();
@@ -1214,7 +1201,6 @@
             const packaging = parseFloat(document.getElementById('inv-packaging').value) || 0;
             const grandTotal = subtotal + totalTax + packaging;
 
-            // Update live preview DOM
             document.getElementById('print-inv-no').innerText = document.getElementById('inv-number').value;
             document.getElementById('print-inv-date').innerText = document.getElementById('inv-date').value;
             
@@ -1228,16 +1214,14 @@
 
             document.getElementById('print-pay-mode').innerText = document.getElementById('inv-pay-mode').value;
             
-            // Business Details
             document.getElementById('print-biz-name').innerText = currentSettings.bizName;
-            document.getElementById('print-biz-address').innerText = currentSettings.bizAddress;
+            document.getElementById('print-biz-address').innerText = (currentSettings.bizAddress || '').replace(/\\n/g, '\n');
             document.getElementById('print-biz-gstin').innerText = currentSettings.bizGstin;
             document.getElementById('print-biz-phone-val').innerText = currentSettings.bizPhone;
             document.getElementById('print-biz-email-val').innerText = currentSettings.bizEmail;
             document.getElementById('print-signatory-title').innerText = 'For ' + currentSettings.bizName;
-            document.getElementById('print-terms').innerText = currentSettings.bizTerms.replace(/\\n/g, '\n');
+            document.getElementById('print-terms').innerText = (currentSettings.bizTerms || '').replace(/\\n/g, '\n');
 
-            // Logo, Signature, QR
             if (currentSettings.logoData) {
                 document.getElementById('print-logo-box').innerHTML = `<img src="${currentSettings.logoData}" class="h-full w-full object-contain">`;
             }
@@ -1259,7 +1243,6 @@
             const invoiceObj = gatherInvoiceData();
             await dbPut('invoices', invoiceObj);
             
-            // Deduct stock quantities
             for (let item of invoiceObj.items) {
                 const prod = productsList.find(p => p.id === item.productId);
                 if (prod) {
@@ -1327,7 +1310,6 @@
             };
         }
 
-        // Invoices List Table
         function renderInvoicesTable() {
             const query = document.getElementById('invoice-search').value.toLowerCase();
             const filtered = invoicesList.filter(inv => inv.invNumber.toLowerCase().includes(query) || inv.clientName.toLowerCase().includes(query));
@@ -1375,7 +1357,6 @@
             }
         }
 
-        // Backup & Export JSON
         async function exportFullDataJSON() {
             const data = {
                 settings: currentSettings,
